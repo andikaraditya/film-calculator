@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Film Cost Per Exposure Calculator</title>
   <style>
     body {
@@ -44,7 +45,7 @@
     .film-form {
       background: white;
       border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       padding: 20px;
       width: 300px;
       cursor: grab;
@@ -97,6 +98,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <h2>Film Roll Cost Per Exposure Calculator</h2>
@@ -300,7 +302,7 @@
         const container = document.getElementById('container');
         container.innerHTML = '';
         // Create fresh 3 forms
-        for(let i=0; i<3; i++){
+        for (let i = 0; i < 3; i++) {
           const form = createForm(i);
           container.appendChild(form);
         }
@@ -309,7 +311,7 @@
     });
 
     // Initial load
-    if(localStorage.getItem(STORAGE_KEY)) {
+    if (localStorage.getItem(STORAGE_KEY)) {
       loadFromStorage();
     } else {
       enableDragAndDrop();
@@ -321,4 +323,5 @@
   </script>
 
 </body>
+
 </html>
