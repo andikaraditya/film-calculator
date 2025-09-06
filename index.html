@@ -47,6 +47,13 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       padding: 20px;
       width: 300px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .film-form.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
     }
 
     .film-form input[type="text"],
@@ -95,9 +102,9 @@
   <h2>Film Roll Cost Per Exposure Calculator</h2>
   <button class="reset-btn">Reset All</button>
 
-  <div class="container">
+  <div class="container" id="container">
     <!-- Film Roll Forms -->
-    <div class="film-form" data-roll="0">
+    <div class="film-form" data-roll="0" draggable="true">
       <input type="text" class="film-title" value="Roll 1" />
       <label>Film Price:</label>
       <input type="text" class="film-price" placeholder="e.g. 1200" />
@@ -108,7 +115,7 @@
       <div class="result">Cost per exposure: <span class="cost">0</span></div>
     </div>
 
-    <div class="film-form" data-roll="1">
+    <div class="film-form" data-roll="1" draggable="true">
       <input type="text" class="film-title" value="Roll 2" />
       <label>Film Price:</label>
       <input type="text" class="film-price" />
@@ -119,7 +126,7 @@
       <div class="result">Cost per exposure: <span class="cost">0</span></div>
     </div>
 
-    <div class="film-form" data-roll="2">
+    <div class="film-form" data-roll="2" draggable="true">
       <input type="text" class="film-title" value="Roll 3" />
       <label>Film Price:</label>
       <input type="text" class="film-price" />
@@ -165,7 +172,7 @@
       const forms = document.querySelectorAll('.film-form');
       const data = [];
 
-      forms.forEach((form, i) => {
+      forms.forEach((form) => {
         data.push({
           title: form.querySelector('.film-title').value,
           film: form.querySelector('.film-price').value,
@@ -187,16 +194,40 @@
       if (!stored) return;
 
       const data = JSON.parse(stored);
+      const container = document.getElementById('container');
+      container.innerHTML = ''; // Clear existing forms
+
       data.forEach((roll, i) => {
-        const form = document.querySelector(`.film-form[data-roll="${i}"]`);
-        if (form) {
-          form.querySelector('.film-title').value = roll.title || '';
-          form.querySelector('.film-price').value = roll.film || '';
-          form.querySelector('.dev-price').value = roll.dev || '';
-          form.querySelector('.exposures').value = roll.exposures || '';
-          calculateCost(form);
-        }
+        const form = createForm(i, roll);
+        container.appendChild(form);
       });
+
+      // Re-bind inputs & drag events after load
+      document.querySelectorAll('.film-form').forEach(handleInput);
+      enableDragAndDrop();
+    }
+
+    function createForm(index, data = {}) {
+      // Create a div and fill with inner HTML for a form
+      const div = document.createElement('div');
+      div.classList.add('film-form');
+      div.setAttribute('data-roll', index);
+      div.setAttribute('draggable', 'true');
+
+      div.innerHTML = `
+        <input type="text" class="film-title" value="${data.title || `Roll ${index + 1}`}" />
+        <label>Film Price:</label>
+        <input type="text" class="film-price" placeholder="e.g. 1200" value="${data.film || ''}" />
+        <label>Number of Exposures:</label>
+        <input type="number" class="exposures" placeholder="e.g. 36" value="${data.exposures || ''}" />
+        <label>Dev/Scan Price:</label>
+        <input type="text" class="dev-price" placeholder="e.g. 300" value="${data.dev || ''}" />
+        <div class="result">Cost per exposure: <span class="cost">0</span></div>
+      `;
+
+      calculateCost(div);
+      handleInput(div);
+      return div;
     }
 
     function handleInput(form) {
@@ -224,23 +255,67 @@
       titleInput.addEventListener('input', debounceSave);
     }
 
-    document.querySelectorAll('.film-form').forEach(handleInput);
+    // Drag and Drop Logic
+    function enableDragAndDrop() {
+      const container = document.getElementById('container');
+      let draggedElem = null;
+
+      container.querySelectorAll('.film-form').forEach(form => {
+        form.addEventListener('dragstart', (e) => {
+          draggedElem = form;
+          form.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        form.addEventListener('dragend', () => {
+          draggedElem = null;
+          container.querySelectorAll('.film-form').forEach(f => f.classList.remove('dragging'));
+          saveAllForms(); // Save order after drag end
+        });
+
+        form.addEventListener('dragover', (e) => {
+          e.preventDefault();
+
+          const target = e.target.closest('.film-form');
+          if (!target || target === draggedElem) return;
+
+          const rect = target.getBoundingClientRect();
+          const next = (e.clientY - rect.top) > (rect.height / 2);
+
+          if (next) {
+            container.insertBefore(draggedElem, target.nextSibling);
+          } else {
+            container.insertBefore(draggedElem, target);
+          }
+        });
+      });
+    }
 
     // Reset button
     document.querySelector('.reset-btn').addEventListener('click', () => {
       if (confirm("Reset all fields and clear saved data?")) {
         localStorage.removeItem(STORAGE_KEY);
-        document.querySelectorAll('.film-form').forEach((form, i) => {
-          form.querySelector('.film-title').value = `Roll ${i + 1}`;
-          form.querySelector('.film-price').value = '';
-          form.querySelector('.dev-price').value = '';
-          form.querySelector('.exposures').value = '';
-          form.querySelector('.cost').textContent = '0';
-        });
+        const container = document.getElementById('container');
+        container.innerHTML = '';
+        // Create fresh 3 forms
+        for(let i=0; i<3; i++){
+          const form = createForm(i);
+          container.appendChild(form);
+        }
+        enableDragAndDrop();
       }
     });
 
-    loadFromStorage();
+    // Initial load
+    if(localStorage.getItem(STORAGE_KEY)) {
+      loadFromStorage();
+    } else {
+      enableDragAndDrop();
+      document.querySelectorAll('.film-form').forEach(form => {
+        calculateCost(form);
+        handleInput(form);
+      });
+    }
   </script>
 
 </body>
