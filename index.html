@@ -107,11 +107,11 @@
     <div class="film-form" data-roll="0" draggable="true">
       <input type="text" class="film-title" value="Roll 1" />
       <label>Film Price:</label>
-      <input type="text" class="film-price" placeholder="e.g. 1200" />
+      <input type="text" class="film-price" placeholder="e.g. 12.50" />
       <label>Number of Exposures:</label>
       <input type="number" class="exposures" placeholder="e.g. 36" />
       <label>Dev/Scan Price:</label>
-      <input type="text" class="dev-price" placeholder="e.g. 300" />
+      <input type="text" class="dev-price" placeholder="e.g. 5.75" />
       <div class="result">Cost per exposure: <span class="cost">0</span></div>
     </div>
 
@@ -143,9 +143,11 @@
     let debounceTimer;
 
     function formatWithCommas(value) {
-      const parts = value.toString().split(".");
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      return parts.join(".");
+      if (isNaN(value)) return "";
+      return Number(value).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     }
 
     function parseFormattedNumber(value) {
@@ -163,7 +165,7 @@
       const exposures = parseInt(exposuresInput.value) || 0;
 
       const total = filmPrice + devPrice;
-      const costPerExposure = exposures > 0 ? Math.round(total / exposures) : 0;
+      const costPerExposure = exposures > 0 ? (total / exposures).toFixed(2) : "0.00";
 
       result.textContent = formatWithCommas(costPerExposure);
     }
@@ -217,11 +219,11 @@
       div.innerHTML = `
         <input type="text" class="film-title" value="${data.title || `Roll ${index + 1}`}" />
         <label>Film Price:</label>
-        <input type="text" class="film-price" placeholder="e.g. 1200" value="${data.film || ''}" />
+        <input type="text" class="film-price" placeholder="e.g. 12.50" value="${data.film || ''}" />
         <label>Number of Exposures:</label>
         <input type="number" class="exposures" placeholder="e.g. 36" value="${data.exposures || ''}" />
         <label>Dev/Scan Price:</label>
-        <input type="text" class="dev-price" placeholder="e.g. 300" value="${data.dev || ''}" />
+        <input type="text" class="dev-price" placeholder="e.g. 5.75" value="${data.dev || ''}" />
         <div class="result">Cost per exposure: <span class="cost">0</span></div>
       `;
 
@@ -244,7 +246,7 @@
       [filmInput, devInput].forEach(input => {
         input.addEventListener('blur', () => {
           const num = parseFormattedNumber(input.value);
-          input.value = formatWithCommas(Math.round(num));
+          input.value = formatWithCommas(num);  // keep 2 decimals, no rounding to int
           recalcAndSave();
         });
 
