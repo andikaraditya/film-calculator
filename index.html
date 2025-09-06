@@ -19,6 +19,29 @@
       margin-bottom: 20px;
     }
 
+    .reset-form {
+      display: block;
+      margin: 15px auto 0 auto;
+      background-color: #e53935;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .reset-form:hover {
+      background-color: #e0e0e0;
+    }
+
+    .reset-form:active {
+      background-color: #d6d6d6;
+      transform: scale(0.97);
+    }
+
     .reset-btn {
       display: block;
       margin: 0 auto 30px auto;
@@ -227,11 +250,26 @@
         <label>Dev/Scan Price:</label>
         <input type="text" class="dev-price" placeholder="e.g. 5.75" value="${data.dev || ''}" />
         <div class="result">Cost per exposure: <span class="cost">0</span></div>
-      `;
+        <button type="button" class="reset-form">Reset This Roll</button>`;
 
       calculateCost(div);
       handleInput(div);
+      handleResetButton(div, index);
       return div;
+    }
+
+    function handleResetButton(form, index) {
+      const resetBtn = form.querySelector('.reset-form');
+      resetBtn.addEventListener('click', () => {
+        if (confirm(`Reset only Roll ${index + 1}?`)) {
+          form.querySelector('.film-title').value = `Roll ${index + 1}`;
+          form.querySelector('.film-price').value = "";
+          form.querySelector('.exposures').value = "";
+          form.querySelector('.dev-price').value = "";
+          calculateCost(form);
+          saveAllForms();
+        }
+      });
     }
 
     function handleInput(form) {
