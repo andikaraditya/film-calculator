@@ -112,6 +112,38 @@
       margin-top: 15px;
     }
 
+    .film-format {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: #fff;
+      color: #333;
+      margin-top: 5px;
+      appearance: none;
+      /* remove default arrow */
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .film-format:hover {
+      border-color: #999;
+    }
+
+    .film-format:focus {
+      outline: none;
+      border-color: #007acc;
+      box-shadow: 0 0 4px rgba(0, 122, 204, 0.4);
+    }
+
+
     .result {
       margin-top: 20px;
       text-align: center;
@@ -181,6 +213,12 @@
       <input type="number" class="exposures" placeholder="e.g. 36" />
       <label>Dev/Scan Price:</label>
       <input type="text" class="dev-price" placeholder="e.g. 5.75" />
+      <label>Film Format:</label>
+      <select class="film-format">
+        <option value="35mm" selected>35mm</option>
+        <option value="120">120</option>
+      </select>
+
       <div class="result">Cost per exposure: <span class="cost">0</span></div>
     </div>
 
@@ -192,6 +230,12 @@
       <input type="number" class="exposures" />
       <label>Dev/Scan Price:</label>
       <input type="text" class="dev-price" />
+      <label>Film Format:</label>
+      <select class="film-format">
+        <option value="35mm" selected>35mm</option>
+        <option value="120">120</option>
+      </select>
+
       <div class="result">Cost per exposure: <span class="cost">0</span></div>
     </div>
 
@@ -203,7 +247,20 @@
       <input type="number" class="exposures" />
       <label>Dev/Scan Price:</label>
       <input type="text" class="dev-price" />
-      <div class="result">Cost per exposure: <span class="cost">0</span></div>
+      <label>Film Format:</label>
+      <select class="film-format">
+        <option value="35mm" selected>35mm</option>
+        <option value="35mm (half-frame)">35mm (half-frame)</option>
+        <option value="120 (6x4.5)">120 (6x4.5)</option>
+        <option value="120 (6x6)">120 (6x6)</option>
+        <option value="120 (6x7)">120 (6x7)</option>
+        <option value="120 (6x8)">120 (6x8)</option>
+        <option value="120 (6x9)">120 (6x9)</option>
+      </select>
+      <div class="result">
+        Cost per exposure: <span class="cost">0.00</span><br>
+        Cost per sq.mm: <span class="cost-sqmm">0.000000</span>
+      </div>
     </div>
   </div>
 
@@ -241,16 +298,53 @@
       const filmInput = form.querySelector('.film-price');
       const devInput = form.querySelector('.dev-price');
       const exposuresInput = form.querySelector('.exposures');
-      const result = form.querySelector('.cost');
+      const formatSelect = form.querySelector('.film-format');
+      const resultExposure = form.querySelector('.cost');
+      const resultSqmm = form.querySelector('.cost-sqmm');
 
       const filmPrice = parseFormattedNumber(filmInput.value);
       const devPrice = parseFormattedNumber(devInput.value);
       const exposures = parseInt(exposuresInput.value) || 0;
+      const format = formatSelect ? formatSelect.value : "35mm";
 
       const total = filmPrice + devPrice;
-      const costPerExposure = exposures > 0 ? (total / exposures).toFixed(2) : "0.00";
+      const costPerExposure = exposures > 0 ? (total / exposures) : 0;
 
-      result.textContent = formatWithCommas(costPerExposure);
+      const area = getFormatArea(format);
+      const costPerSqmm = exposures > 0 ? (total / (exposures * area)) : 0;
+
+      resultExposure.textContent = formatWithCommas(costPerExposure.toFixed(2));
+      resultSqmm.textContent = costPerSqmm.toFixed(6);
+    }
+
+    function getFormatArea(format) {
+      switch (format) {
+        case "35mm":
+          return 864
+          break;
+        case "35mm (half-frame)":
+          return 432
+          break;
+        case "120 (6x4.5)":
+          return 2700
+          break;
+        case "120 (6x6)":
+          return 3600
+          break;
+        case "120 (6x7)":
+          return 4200
+          break;
+        case "120 (6x8)":
+          return 4800
+          break;
+        case "120 (6x9)":
+          return 5400
+          break;
+        default:
+          return 864
+          break;
+      }
+
     }
 
     function saveAllForms() {
@@ -262,7 +356,8 @@
           title: form.querySelector('.film-title').value,
           film: form.querySelector('.film-price').value,
           dev: form.querySelector('.dev-price').value,
-          exposures: form.querySelector('.exposures').value
+          exposures: form.querySelector('.exposures').value,
+          format: form.querySelector('.film-format').value
         });
       });
 
@@ -307,7 +402,20 @@
         <input type="number" class="exposures" placeholder="e.g. 36" value="${data.exposures || ''}" />
         <label>Dev/Scan Price:</label>
         <input type="text" class="dev-price" placeholder="e.g. 5.75" value="${data.dev || ''}" />
-        <div class="result">Cost per exposure: <span class="cost">0</span></div>
+        <label>Film Format:</label>
+        <select class="film-format">
+          <option value="35mm" ${data.format === "35mm" || !data.format ? "selected" : ""}>35mm</option>
+          <option value="35mm (half-frame)" ${data.format === "35mm (half-frame)" ? "selected" : ""}>35mm (half-frame)</option>
+          <option value="120 (6x4.5)" ${data.format === "120 (6x4.5)" ? "selected" : ""}>120 (6x4.5)</option>
+          <option value="120 (6x6)" ${data.format === "120 (6x6)" ? "selected" : ""}>120 (6x6)</option>
+          <option value="120 (6x7)" ${data.format === "120 (6x7)" ? "selected" : ""}>120 (6x7)</option>
+          <option value="120 (6x8)" ${data.format === "120 (6x8)" ? "selected" : ""}>120 (6x8)</option>
+          <option value="120 (6x9)" ${data.format === "120 (6x9)" ? "selected" : ""}>120 (6x9)</option>
+        </select>
+        <div class="result">
+          Cost per exposure: <span class="cost">0.00</span><br>
+          Cost per sq.mm: <span class="cost-sqmm">0.000000</span>
+        </div>
         <button type="button" class="reset-form">Reset This Roll</button>`;
 
       calculateCost(div);
@@ -335,6 +443,7 @@
       const devInput = form.querySelector('.dev-price');
       const exposuresInput = form.querySelector('.exposures');
       const titleInput = form.querySelector('.film-title');
+      const formatSelect = form.querySelector('.film-format');
 
       const recalcAndSave = () => {
         calculateCost(form);
@@ -352,6 +461,7 @@
       });
 
       exposuresInput.addEventListener('input', recalcAndSave);
+      formatSelect.addEventListener('change', recalcAndSave);
       titleInput.addEventListener('input', debounceSave);
     }
 
