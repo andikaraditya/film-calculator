@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Film Cost Per Exposure Calculator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .reset-btn {
+      display: block;
+      margin: 0 auto 30px auto;
+      background-color: #e53935;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .reset-btn:hover {
+      background-color: #c62828;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .film-form {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      width: 300px;
+    }
+
+    .film-form input[type="text"],
+    .film-form input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+      margin-top: 5px;
+    }
+
+    .film-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-align: center;
+      border: none;
+      background: transparent;
+      margin-bottom: 10px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .film-title:focus {
+      outline: 2px solid #007acc;
+      background-color: #eef7ff;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+
+    .result {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #2a7a2a;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Film Roll Cost Per Exposure Calculator</h2>
+  <button class="reset-btn">Reset All</button>
+
+  <div class="container">
+    <!-- Film Roll Forms -->
+    <div class="film-form" data-roll="0">
+      <input type="text" class="film-title" value="Roll 1" />
+      <label>Film Price:</label>
+      <input type="text" class="film-price" placeholder="e.g. 1200" />
+      <label>Number of Exposures:</label>
+      <input type="number" class="exposures" placeholder="e.g. 36" />
+      <label>Dev/Scan Price:</label>
+      <input type="text" class="dev-price" placeholder="e.g. 300" />
+      <div class="result">Cost per exposure: <span class="cost">0</span></div>
+    </div>
+
+    <div class="film-form" data-roll="1">
+      <input type="text" class="film-title" value="Roll 2" />
+      <label>Film Price:</label>
+      <input type="text" class="film-price" />
+      <label>Number of Exposures:</label>
+      <input type="number" class="exposures" />
+      <label>Dev/Scan Price:</label>
+      <input type="text" class="dev-price" />
+      <div class="result">Cost per exposure: <span class="cost">0</span></div>
+    </div>
+
+    <div class="film-form" data-roll="2">
+      <input type="text" class="film-title" value="Roll 3" />
+      <label>Film Price:</label>
+      <input type="text" class="film-price" />
+      <label>Number of Exposures:</label>
+      <input type="number" class="exposures" />
+      <label>Dev/Scan Price:</label>
+      <input type="text" class="dev-price" />
+      <div class="result">Cost per exposure: <span class="cost">0</span></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'filmRollData';
+    let debounceTimer;
+
+    function formatWithCommas(value) {
+      const parts = value.toString().split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return parts.join(".");
+    }
+
+    function parseFormattedNumber(value) {
+      return parseFloat(value.replace(/,/g, '')) || 0;
+    }
+
+    function calculateCost(form) {
+      const filmInput = form.querySelector('.film-price');
+      const devInput = form.querySelector('.dev-price');
+      const exposuresInput = form.querySelector('.exposures');
+      const result = form.querySelector('.cost');
+
+      const filmPrice = parseFormattedNumber(filmInput.value);
+      const devPrice = parseFormattedNumber(devInput.value);
+      const exposures = parseInt(exposuresInput.value) || 0;
+
+      const total = filmPrice + devPrice;
+      const costPerExposure = exposures > 0 ? Math.round(total / exposures) : 0;
+
+      result.textContent = formatWithCommas(costPerExposure);
+    }
+
+    function saveAllForms() {
+      const forms = document.querySelectorAll('.film-form');
+      const data = [];
+
+      forms.forEach((form, i) => {
+        data.push({
+          title: form.querySelector('.film-title').value,
+          film: form.querySelector('.film-price').value,
+          dev: form.querySelector('.dev-price').value,
+          exposures: form.querySelector('.exposures').value
+        });
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function debounceSave() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(saveAllForms, 500);
+    }
+
+    function loadFromStorage() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return;
+
+      const data = JSON.parse(stored);
+      data.forEach((roll, i) => {
+        const form = document.querySelector(`.film-form[data-roll="${i}"]`);
+        if (form) {
+          form.querySelector('.film-title').value = roll.title || '';
+          form.querySelector('.film-price').value = roll.film || '';
+          form.querySelector('.dev-price').value = roll.dev || '';
+          form.querySelector('.exposures').value = roll.exposures || '';
+          calculateCost(form);
+        }
+      });
+    }
+
+    function handleInput(form) {
+      const filmInput = form.querySelector('.film-price');
+      const devInput = form.querySelector('.dev-price');
+      const exposuresInput = form.querySelector('.exposures');
+      const titleInput = form.querySelector('.film-title');
+
+      const recalcAndSave = () => {
+        calculateCost(form);
+        debounceSave();
+      };
+
+      [filmInput, devInput].forEach(input => {
+        input.addEventListener('blur', () => {
+          const num = parseFormattedNumber(input.value);
+          input.value = formatWithCommas(Math.round(num));
+          recalcAndSave();
+        });
+
+        input.addEventListener('input', recalcAndSave);
+      });
+
+      exposuresInput.addEventListener('input', recalcAndSave);
+      titleInput.addEventListener('input', debounceSave);
+    }
+
+    document.querySelectorAll('.film-form').forEach(handleInput);
+
+    // Reset button
+    document.querySelector('.reset-btn').addEventListener('click', () => {
+      if (confirm("Reset all fields and clear saved data?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        document.querySelectorAll('.film-form').forEach((form, i) => {
+          form.querySelector('.film-title').value = `Roll ${i + 1}`;
+          form.querySelector('.film-price').value = '';
+          form.querySelector('.dev-price').value = '';
+          form.querySelector('.exposures').value = '';
+          form.querySelector('.cost').textContent = '0';
+        });
+      }
+    });
+
+    loadFromStorage();
+  </script>
+
+</body>
+</html>
